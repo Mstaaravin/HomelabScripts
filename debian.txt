@@ -1,0 +1,5 @@
+timedatectl set-timezone America/Argentina/Buenos_Aires
+timedatectl
+sed -i 's/main non-free-firmware/main contrib non-free non-free-firmware/g' /etc/apt/sources.list
+apt install -y aptitude rsync nano vim sudo tmux ca-certificates curl pbzip2 htop whois wget git pigz gpg ipcalc tree bind9-dnsutils
+echo "cmiranda ALL=NOPASSWD: ALL" > /etc/sudoers.d/cmiranda
