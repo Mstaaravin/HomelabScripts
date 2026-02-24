@@ -40,10 +40,12 @@ if [ -z "$ACTUAL_CONTAINER" ]; then
 fi
 
 # --- Extraer env var del container ---
+# sed strip: elimina comentarios inline tipo "valor #comentario" (requiere espacio antes de #)
+# No afecta passwords con # sin espacio previo (ej: "pass#word" queda intacto)
 _env() {
     docker inspect "$ACTUAL_CONTAINER" \
         --format '{{range .Config.Env}}{{println .}}{{end}}' 2>/dev/null \
-        | grep "^${1}=" | cut -d= -f2- || true
+        | grep "^${1}=" | cut -d= -f2- | sed 's/[[:space:]]\+#.*$//' || true
 }
 
 # --- Auto-detectar motor: MySQL/MariaDB → PostgreSQL ---
