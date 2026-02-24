@@ -11,7 +11,7 @@
 #   CONTAINER="zabbix_db"
 #
 # backup.conf (completo):
-#   CONTAINER="zabbix_db"
+#   CONTAINER="zabbix_db"        # nombre del servicio (Docker o Swarm)
 #   RETENTION_DAYS=7
 #   BACKUP_DIR="/var/backups/zabbix_db"   # opcional, por defecto /var/backups/<container>
 
@@ -28,9 +28,20 @@ source "$CONFIG"
 DATE=$(date +%Y%m%d_%H%M%S)
 BACKUP_FILE="${BACKUP_DIR}/${CONTAINER}_${DATE}.sql.gz"
 
+# --- Resolver nombre real del container (soporta Docker y Docker Swarm) ---
+# En Swarm los containers tienen el formato: <stack>_<service>.1.<hash>
+ACTUAL_CONTAINER=$(docker ps --format '{{.Names}}' \
+    | grep -E "^${CONTAINER}(\.[0-9]+\.[a-z0-9]+)?$" \
+    | head -1 || true)
+
+if [ -z "$ACTUAL_CONTAINER" ]; then
+    echo "ERROR: container '${CONTAINER}' no encontrado o no está corriendo" >&2
+    exit 1
+fi
+
 # --- Extraer env var del container ---
 _env() {
-    docker inspect "$CONTAINER" \
+    docker inspect "$ACTUAL_CONTAINER" \
         --format '{{range .Config.Env}}{{println .}}{{end}}' 2>/dev/null \
         | grep "^${1}=" | cut -d= -f2- || true
 }
@@ -53,25 +64,25 @@ else
     if [ -n "$DB_USER" ] && [ -n "$DB_NAME" ]; then
         ENGINE="postgres"
     else
-        echo "ERROR: motor no detectado en container '${CONTAINER}'" >&2
+        echo "ERROR: motor no detectado en container '${ACTUAL_CONTAINER}'" >&2
         exit 1
     fi
 fi
 
 # --- Backup ---
 mkdir -p "$BACKUP_DIR"
-echo "[$(date '+%F %T')] Iniciando backup de '${DB_NAME}' (${ENGINE}) desde '${CONTAINER}'"
+echo "[$(date '+%F %T')] Iniciando backup de '${DB_NAME}' (${ENGINE}) desde '${ACTUAL_CONTAINER}'"
 
 case "$ENGINE" in
     mysql)
-        docker exec "$CONTAINER" mysqldump \
+        docker exec "$ACTUAL_CONTAINER" mysqldump \
             -u"$DB_USER" -p"$DB_PASS" \
             --single-transaction --routines --triggers \
             "$DB_NAME" 2>/dev/null \
             | gzip > "$BACKUP_FILE"
         ;;
     postgres)
-        docker exec -e PGPASSWORD="$DB_PASS" "$CONTAINER" pg_dump \
+        docker exec -e PGPASSWORD="$DB_PASS" "$ACTUAL_CONTAINER" pg_dump \
             -U "$DB_USER" -d "$DB_NAME" --no-password \
             | gzip > "$BACKUP_FILE"
         ;;
