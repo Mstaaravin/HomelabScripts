@@ -4,7 +4,7 @@ sed -i 's/^#force_color_prompt=yes/force_color_prompt=yes/' /etc/skel/.bashrc
 sed -i 's/\\\[\\033\[01;32m\\\]/\\\[\\033[01;33m\\\]/' /etc/skel/.bashrc
 cat /etc/skel/.bashrc > /root/.bashrc
 source /root/.bashrc
-apt install -y aptitude rsync nano vim sudo tmux git ca-certificates curl debootstrap pbzip2 htop whois wget git pigz smartmontools gpg tree
+apt install -y aptitude rsync nano vim sudo tmux git ca-certificates curl debootstrap pbzip2 htop whois wget pigz smartmontools gpg tree
 timedatectl set-timezone America/Argentina/Buenos_Aires
 timedatectl
 echo "cmiranda ALL=NOPASSWD: ALL" > /etc/sudoers.d/cmiranda
