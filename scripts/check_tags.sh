@@ -10,20 +10,30 @@ PAGE_SIZE=100
 # =========================
 # Parámetros
 # =========================
-IMAGE="$1"
+INPUT="$1"
 
-if [[ -z "$IMAGE" ]]; then
-  echo "Uso: $0 <imagen>"
+if [[ -z "$INPUT" ]]; then
+  echo "Uso: $0 <imagen> o $0 <imagen>:<tag>"
   echo "Ejemplo: $0 linuxserver/nextcloud"
+  echo "         $0 zabbix/zabbix-server-mysql:6.0-alpine-latest"
   exit 1
+fi
+
+# Separar imagen y tag (default: latest)
+if [[ "$INPUT" == *":"* ]]; then
+  IMAGE="${INPUT%%:*}"
+  REF_TAG="${INPUT##*:}"
+else
+  IMAGE="$INPUT"
+  REF_TAG="latest"
 fi
 
 BASE_URL="https://hub.docker.com/v2/repositories/${IMAGE}/tags"
 
 # =========================
-# 1) Digest de latest
+# 1) Digest del tag de referencia
 # =========================
-LATEST_DIGEST=$(curl -s "${BASE_URL}/latest" \
+LATEST_DIGEST=$(curl -s "${BASE_URL}/${REF_TAG}" \
   | jq -r --arg ARCH "$ARCH" --arg OS "$OS" '
     .images[]
     | select(.architecture==$ARCH and .os==$OS)
@@ -66,4 +76,4 @@ echo "$RESP" | jq -r \
   done
 
   URL=$(echo "$RESP" | jq -r '.next')
-done
+done``
