@@ -77,7 +77,13 @@ echo "[$(date '+%F %T')] Iniciando backup de '${DB_NAME}' (${ENGINE}) desde '${A
 
 case "$ENGINE" in
     mysql)
-        docker exec "$ACTUAL_CONTAINER" mysqldump \
+        # MariaDB >= 11 (imagen oficial) ya no incluye el alias mysqldump
+        DUMP_BIN=$(docker exec "$ACTUAL_CONTAINER" sh -c 'command -v mariadb-dump || command -v mysqldump' || true)
+        if [ -z "$DUMP_BIN" ]; then
+            echo "ERROR: ni mariadb-dump ni mysqldump disponibles en '${ACTUAL_CONTAINER}'" >&2
+            exit 1
+        fi
+        docker exec "$ACTUAL_CONTAINER" "$DUMP_BIN" \
             -u"$DB_USER" -p"$DB_PASS" \
             --single-transaction --routines --triggers \
             "$DB_NAME" 2>/dev/null \
